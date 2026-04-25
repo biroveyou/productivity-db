@@ -3,122 +3,115 @@
 -- Modelo: Novo Model    Version: 1.0
 -- MySQL Workbench Forward Engineering
 
+-- Configurações iniciais
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+SET @OLD_SQL_MODE=@@SQL_MODE, 
+SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- Criação do schema
+CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET utf8mb4;
+USE `mydb`;
 
 -- -----------------------------------------------------
--- Schema mydb
+-- Tabela Usuario
 -- -----------------------------------------------------
-
--- -----------------------------------------------------
--- Schema mydb
--- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `mydb` DEFAULT CHARACTER SET utf8 ;
-USE `mydb` ;
-
--- -----------------------------------------------------
--- Tabela `mydb`.`Usuario`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`Usuario` (
+CREATE TABLE IF NOT EXISTS `Usuario` (
   `id_usuario` INT NOT NULL AUTO_INCREMENT,
   `nome` VARCHAR(45) NOT NULL,
   `email` VARCHAR(60) NOT NULL,
-  `data_criacao` DATETIME NULL,
+  `data_criacao` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_usuario`),
-  UNIQUE INDEX `email_UNIQUE` (`email` ASC))
-ENGINE = InnoDB;
-
+  UNIQUE (`email`)
+) ENGINE=InnoDB;
 
 -- -----------------------------------------------------
--- Tabela `mydb`.`Problema`
+-- Tabela Problema
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`Problema` (
-  `id_problema` INT NOT NULL,
+CREATE TABLE IF NOT EXISTS `Problema` (
+  `id_problema` INT NOT NULL AUTO_INCREMENT,
   `nome` VARCHAR(45) NOT NULL,
-  `descricao` VARCHAR(200) NULL,
-  `gravidade` VARCHAR(20) NULL,
-  PRIMARY KEY (`id_problema`))
-ENGINE = InnoDB;
-
+  `descricao` VARCHAR(200),
+  `gravidade` VARCHAR(20),
+  PRIMARY KEY (`id_problema`)
+) ENGINE=InnoDB;
 
 -- -----------------------------------------------------
--- Tabela `mydb`.`RegistroDiario`
+-- Tabela RegistroDiario
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`RegistroDiario` (
+CREATE TABLE IF NOT EXISTS `RegistroDiario` (
   `id_registro` INT NOT NULL AUTO_INCREMENT,
   `data` DATE NOT NULL,
-  `humor` VARCHAR(45) NULL,
-  `produtividade` VARCHAR(20) NULL,
-  `observacoes` VARCHAR(200) NULL,
-  `Problema_id_problema` INT NOT NULL,
-  `Usuario_id_usuario` INT NOT NULL,
-  PRIMARY KEY (`id_registro`, `Problema_id_problema`, `Usuario_id_usuario`),
-  INDEX `fk_RegistroDiario_Problema1_idx` (`Problema_id_problema` ASC),
-  INDEX `fk_RegistroDiario_Usuario1_idx` (`Usuario_id_usuario` ASC),
-  CONSTRAINT `fk_RegistroDiario_Problema1`
-    FOREIGN KEY (`Problema_id_problema`)
-    REFERENCES `mydb`.`Problema` (`id_problema`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_RegistroDiario_Usuario1`
-    FOREIGN KEY (`Usuario_id_usuario`)
-    REFERENCES `mydb`.`Usuario` (`id_usuario`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+  `humor` VARCHAR(45),
+  `produtividade` INT, -- escala numérica (ex: 1 a 5)
+  `observacoes` VARCHAR(200),
+  `id_problema` INT NULL,
+  `id_usuario` INT NOT NULL,
+  PRIMARY KEY (`id_registro`),
 
+  CONSTRAINT `fk_registro_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `Usuario` (`id_usuario`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+
+  CONSTRAINT `fk_registro_problema`
+    FOREIGN KEY (`id_problema`)
+    REFERENCES `Problema` (`id_problema`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
 -- -----------------------------------------------------
--- Tabela `mydb`.`Estudo`
+-- Tabela Estudo
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`Estudo` (
+CREATE TABLE IF NOT EXISTS `Estudo` (
   `id_estudo` INT NOT NULL AUTO_INCREMENT,
-  `duracao_horas` DECIMAL(2,2) NOT NULL,
-  `descricao` VARCHAR(200) NULL,
+  `duracao_horas` DECIMAL(4,2) NOT NULL,
+  `descricao` VARCHAR(200),
   `id_registro` INT NOT NULL,
-  PRIMARY KEY (`id_estudo`, `id_registro`),
-  INDEX `fk_Estudo_RegistroDiario1_idx` (`id_registro` ASC),
-  CONSTRAINT `fk_Estudo_RegistroDiario1`
+  PRIMARY KEY (`id_estudo`),
+
+  CONSTRAINT `fk_estudo_registro`
     FOREIGN KEY (`id_registro`)
-    REFERENCES `mydb`.`RegistroDiario` (`id_registro`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
+    REFERENCES `RegistroDiario` (`id_registro`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
 -- -----------------------------------------------------
--- Tabela `mydb`.`Topico`
+-- Tabela Topico
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`Topico` (
+CREATE TABLE IF NOT EXISTS `Topico` (
   `id_topico` INT NOT NULL AUTO_INCREMENT,
   `nome` VARCHAR(45) NOT NULL,
-  `descricao` VARCHAR(200) NULL,
-  PRIMARY KEY (`id_topico`))
-ENGINE = InnoDB;
-
+  `descricao` VARCHAR(200),
+  PRIMARY KEY (`id_topico`)
+) ENGINE=InnoDB;
 
 -- -----------------------------------------------------
--- Tabela `mydb`.`EstudoTopico`
+-- Tabela EstudoTopico (N:N)
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`EstudoTopico` (
+CREATE TABLE IF NOT EXISTS `EstudoTopico` (
   `id_estudo` INT NOT NULL,
   `id_topico` INT NOT NULL,
-  INDEX `fk_Estudo_Topico_Estudo_idx` (`id_estudo` ASC),
-  INDEX `fk_Estudo_Topico_Topico1_idx` (`id_topico` ASC),
-  CONSTRAINT `fk_Estudo_Topico_Estudo`
+
+  PRIMARY KEY (`id_estudo`, `id_topico`),
+
+  CONSTRAINT `fk_estudo_topico_estudo`
     FOREIGN KEY (`id_estudo`)
-    REFERENCES `mydb`.`Estudo` (`id_estudo`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_Estudo_Topico_Topico1`
+    REFERENCES `Estudo` (`id_estudo`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+
+  CONSTRAINT `fk_estudo_topico_topico`
     FOREIGN KEY (`id_topico`)
-    REFERENCES `mydb`.`Topico` (`id_topico`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
+    REFERENCES `Topico` (`id_topico`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE=InnoDB;
 
-
+-- Restaurando configurações
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
